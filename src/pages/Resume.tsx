@@ -1,6 +1,7 @@
 import { Download, Printer } from "lucide-react";
 import { ACHIEVEMENTS, FREELANCE, LEADERSHIP, PROFILE, QWORLD, SKILL_GROUPS } from "../data/profile";
 import { useMeta } from "../lib/hooks";
+import { safeExternalUrl, safeMailto } from "../lib/security";
 
 const RESUME_PROJECTS = [
   {
@@ -71,15 +72,15 @@ export default function Resume() {
             <h1 className="h1">{PROFILE.name}</h1>
             <p className="resume-role">{PROFILE.role}</p>
             <p className="resume-contact">
-              <a href={PROFILE.links.github} target="_blank" rel="noopener noreferrer">
+              <a href={safeExternalUrl(PROFILE.links.github) ?? undefined} target="_blank" rel="noopener noreferrer">
                 github.com/Am-create7754
               </a>
               <span aria-hidden="true"> · </span>
-              <a href={PROFILE.links.linkedin} target="_blank" rel="noopener noreferrer">
+              <a href={safeExternalUrl(PROFILE.links.linkedin) ?? undefined} target="_blank" rel="noopener noreferrer">
                 linkedin.com/in/amber-sahay-4371b526b
               </a>
               <span aria-hidden="true"> · </span>
-              {PROFILE.email ? <a href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a> : <span className="placeholder-tag">Email — add before submitting</span>}
+              {safeMailto(PROFILE.email) ? <a href={safeMailto(PROFILE.email)!}>{PROFILE.email}</a> : <span className="placeholder-tag">Email — add before submitting</span>}
             </p>
             <p className="resume-summary">{PROFILE.positioning}</p>
           </header>

@@ -5,6 +5,7 @@ import { PROJECTS } from "../data/projects";
 import { useMeta } from "../lib/hooks";
 import { Decode, Reveal, SectionLabel, Stream } from "../components/motion";
 import { Portrait } from "../components/Portrait";
+import { safeExternalUrl } from "../lib/security";
 import { SkillsGrid } from "../components/sections";
 import { StatusBadge } from "../components/ModelCard";
 
@@ -30,7 +31,7 @@ export default function About() {
               <p className="body-text">{NARRATIVE[2]}</p>
             </div>
             <div className="chips about-links">
-              <a className="btn" href={PROFILE.links.github} target="_blank" rel="noopener noreferrer">
+              <a className="btn" href={safeExternalUrl(PROFILE.links.github) ?? undefined} target="_blank" rel="noopener noreferrer">
                 <Github aria-hidden="true" strokeWidth={1.5} /> GitHub <ArrowUpRight aria-hidden="true" strokeWidth={1.5} />
               </a>
               <Link className="btn" to="/resume">
@@ -86,7 +87,7 @@ export default function About() {
                 <li key={pt}>{pt}</li>
               ))}
             </ul>
-            <a className="text-link lead-live" href={FREELANCE.live.url} target="_blank" rel="noopener noreferrer">
+            <a className="text-link lead-live" href={safeExternalUrl(FREELANCE.live.url) ?? undefined} target="_blank" rel="noopener noreferrer">
               Live client site: {FREELANCE.live.label} <ArrowUpRight aria-hidden="true" strokeWidth={1.5} />
             </a>
             <p className="muted lead-note">Working directly with a client: turning their requirements into a visual design, then into a shipped site.</p>

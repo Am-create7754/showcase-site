@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Github } from "lucide-react";
 import { PROJECTS, type Project } from "../data/projects";
 import { StatusBadge } from "./ModelCard";
+import { safeExternalUrl } from "../lib/security";
 import { Decode, RegMarks, SectionLabel, Stream } from "./motion";
 
 export function CaseHero({ project: p, title, summary, children }: { project: Project; title: string; summary: string; children?: ReactNode }) {
@@ -50,10 +51,11 @@ export function CaseHero({ project: p, title, summary, children }: { project: Pr
 }
 
 export function RepoLink({ project: p, asButton = false }: { project: Project; asButton?: boolean }) {
-  if (p.repo) {
+  const repo = safeExternalUrl(p.repo);
+  if (repo) {
     return (
-      <a className={asButton ? "btn btn--primary" : "text-link"} href={p.repo} target="_blank" rel="noopener noreferrer">
-        <Github aria-hidden="true" strokeWidth={1.5} /> {asButton ? "View repository on GitHub" : p.repo.replace("https://", "")}
+      <a className={asButton ? "btn btn--primary" : "text-link"} href={repo} target="_blank" rel="noopener noreferrer">
+        <Github aria-hidden="true" strokeWidth={1.5} /> {asButton ? "View repository on GitHub" : repo.replace("https://", "")}
         <ArrowUpRight aria-hidden="true" strokeWidth={1.5} />
       </a>
     );

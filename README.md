@@ -10,6 +10,8 @@ npm run dev        # http://localhost:5173
 npm test           # unit tests (Vitest)
 npm run build      # typecheck + production build into dist/
 npm run preview    # serve the production build locally
+npm run serve:dist # serve dist/ WITH the production security headers (port 4173)
+npm run verify     # typecheck, tests, build, bundle check, production audit (what CI runs)
 ```
 
 Requires Node 18+ (built and tested on Node 22).
@@ -81,9 +83,37 @@ I used plain CSS custom properties instead of Tailwind. The SIGNAL spec is token
 
 ## Tests
 
-`npm test` runs 28 unit tests that cover:
+`npm test` runs 47 tests that cover:
 
 - the guardrail policy engine: detection, Luhn validation, role-based decisions, redaction offsets, and HMAC chaining;
 - IPL analytics: totals, phases, collapse detection, routing, and refusing unsupported questions;
 - the design assistant: brief parsing, completeness, open questions, feedback priority and category, and summary derivation;
-- MaDDoC shared state: verification, booking rules, availability, and schedules across the patient, doctor and admin views.
+- MaDDoC shared state: verification, booking rules, availability, and schedules across the patient, doctor and admin views;
+- security helpers: the outbound-link allowlist (rejects `javascript:`, `data:`, plain http, lookalike hosts) and contact-form validation (header injection, length limits, malformed bodies, unexpected fields, honeypot);
+- deployment headers (`tests/headers.test.ts`): Netlify and Vercel send identical headers, and the CSP stays strict.
+
+## Security
+
+The site is a static single-page app. It has no backend, database, authentication or cookies, and no API keys: every AI demo runs deterministic logic in the browser on labelled sample data.
+
+| Area | How it's handled |
+| --- | --- |
+| XSS | No `innerHTML` or `dangerouslySetInnerHTML` anywhere. All user input (demo boxes, the form) is rendered as text by React. |
+| Outbound links | `safeExternalUrl` (`src/lib/security.ts`) only allows `https:` links to an allowlist of hosts. Email links go through `safeMailto`. |
+| Contact form | `validateContact` checks types and lengths, rejects line breaks in single-line fields, drops unknown fields, and has a honeypot. Requests time out after 10s. A failure shows a `mailto:` link and never a fake success. Server-side spam filtering is Netlify Forms' job. |
+| Headers | `public/_headers` (Netlify) and `vercel.json` (Vercel) send a strict CSP with no `unsafe-inline` or `unsafe-eval`, and allow only Google Fonts as a third party. They also set HSTS, `nosniff`, `DENY` framing, COOP/CORP, a restrictive Permissions-Policy and long caching for fingerprinted assets. |
+| Bundle | `npm run check:bundle` fails the build if `dist/` contains credential-shaped strings, source maps, env references, dotfiles or inline scripts and styles. |
+| Supply chain | `.github/workflows/ci.yml` runs every check with read-only permissions and SHA-pinned actions. Dependabot proposes npm and Actions updates. |
+| Storage | localStorage holds only the theme (`light`/`dark`, validated). sessionStorage holds a "boot animation shown" flag. Nothing personal is stored. |
+
+**Known accepted risks**
+- Two moderate React Router advisories need React Router 7 to fix. This app doesn't use the affected paths: route paths are constants, and there's no server-side rendering.
+- Development-only advisories in Vite, Vitest and esbuild need major upgrades. They don't ship to visitors. Don't run the dev server with `--host` on untrusted networks.
+
+## Deployment checklist
+
+1. On Netlify, import the repository. `netlify.toml` sets the build command and `dist/` as the publish directory.
+2. After the first deploy, check the live headers. Run `curl -sI https://<your-site>/` and confirm `content-security-policy`, `strict-transport-security` and `x-frame-options` are present. Open the site and confirm the browser console shows no CSP errors.
+3. In Netlify, under **Forms**, confirm the `contact` form was detected. Turn on email notifications, and turn on spam filtering (it's on by default).
+4. Under **Domain management**, make sure HTTPS is active ("Force HTTPS" is automatic on Netlify). If you add your own domain, you can extend HSTS with `includeSubDomains` once every subdomain serves HTTPS.
+5. On GitHub, under **Settings → Code security**, turn on secret scanning, push protection and Dependabot alerts.
